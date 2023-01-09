@@ -51,17 +51,6 @@ const queueManager = (() => {
   };
 })();
 
-export const useCounterStore = defineStore('counter', {
-  state: () => {
-    return {
-      count: 0,
-      isLoading: false,
-    }
-  },
-  actions: {
-  },
-})
-
 export const useArticlesStore = defineStore('articles', {
   state: () => {
     return {

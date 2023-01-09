@@ -1,32 +1,25 @@
 <script setup>
-  import { storeToRefs } from 'pinia';
-  import { useArticlesStore } from '../store';
+import { ref, computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import _ from 'lodash';
+import { useArticlesStore } from '../store';
+import BarChart from '../components/BarChart.vue';
 
-  const articleStore = useArticlesStore();
-  const { articles } = storeToRefs(articleStore);
+const articleStore = useArticlesStore();
+const { articles } = storeToRefs(articleStore);
+
+let dataType = ref('view');
+const dataset = computed(() => _.map(articles.value, (article) => ({ x: article.title, y: article.stats[dataType.value] })))
+
 </script>
 
 <template>
-  <a
-    v-for="article in articles"
-    :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`"
-    class="card"
-    target="_blank"
-    :key="article.id"
-  >
-    <h4>{{ article.title }}</h4>
-    <p>{{ article.createAt }}</p>
-    <div style="display: flex">
-      <img :src="article.image" alt="" style="max-width: 100px" />
-      <ul>
-        <li>view：{{ article.stats.view }}</li>
-        <li>gp：{{ article.stats.gp }}</li>
-        <li>coin：{{ article.stats.coin }}</li>
-      </ul>
-    </div>
-
-    <!-- <pre>{{ res }}</pre> -->
-  </a>
+  <select name="" id="" v-model="dataType">
+    <option value="view">觀看數</option>
+    <option value="gp">GP</option>
+    <option value="coin">巴幣</option>
+  </select>
+  <bar-chart></bar-chart>
 </template>
 
 <style scoped>
@@ -41,6 +34,7 @@
   box-sizing: border-box;
   transition: 0.15s;
 }
+
 .card:hover {
   box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);

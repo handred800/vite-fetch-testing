@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useArticlesStore } from '../store';
 import Landing from '../pages/Landing.vue';
 import Page from '../pages/Page.vue';
 import Dashboard from '../pages/Dashboard.vue';
@@ -41,17 +40,5 @@ const routes = [
 ]
 
 const router = createRouter({ history, routes });
-
-router.beforeEach((to) => {
-  const { articles } = useArticlesStore();
-  console.log(articles.length);
-  if (to.meta.idRequired) {
-    if (articles.length <= 0) {
-      console.log('no data, redirect');
-      router.push('/');
-    }
-  }
-  return true;
-})
 
 export default router;
