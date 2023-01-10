@@ -1,16 +1,20 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { storeToRefs } from 'pinia';
-import _ from 'lodash';
-import { useArticlesStore } from '../store';
-import BarChart from '../components/BarChart.vue';
+import { ref, computed } from "vue";
+import { storeToRefs } from "pinia";
+import _ from "lodash";
+import { useArticlesStore } from "../store";
+import BarChart from "../components/BarChart.vue";
 
 const articleStore = useArticlesStore();
 const { articles } = storeToRefs(articleStore);
 
-let dataType = ref('view');
-const dataset = computed(() => _.map(articles.value, (article) => ({ x: article.title, y: article.stats[dataType.value] })))
-
+let dataType = ref("view");
+const dataset = computed(() =>
+  _.map(articles.value, (article) => ({
+    title: article.title,
+    [dataType.value]: article.stats[dataType.value],
+  }))
+);
 </script>
 
 <template>
@@ -19,7 +23,7 @@ const dataset = computed(() => _.map(articles.value, (article) => ({ x: article.
     <option value="gp">GP</option>
     <option value="coin">巴幣</option>
   </select>
-  <bar-chart></bar-chart>
+  <bar-chart :dataset="dataset" :data-type="dataType"></bar-chart>
 </template>
 
 <style scoped>
