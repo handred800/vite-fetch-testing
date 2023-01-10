@@ -1,42 +1,47 @@
 <script setup>
-import { ref, computed, defineProps, onMounted } from 'vue';
-import usePie from '../composable/usePie';
+import _ from "lodash";
+import { ref, computed, defineProps, onMounted } from "vue";
+import useBar from "../composable/useBar";
 
-// const props = defineProps({
-//   dataset: {
-//     type: Array,
-//     required: true,
-//   }
-// })
+const props = defineProps({
+  dataset: {
+    type: Array,
+    required: true,
+  },
+  dataType: String,
+});
 
 const $container = ref(null);
 
-onMounted(() => {
-  const { setDataset, resize } = usePie($container.value);
-
-  // 初始化 chart
-  setDataset([
-    {
-      data: [120, 200, 150, 80, 70, 110, 130],
-      type: 'bar'
-    }
-  ])
-  window.addEventListener('resize', () => {
-    resize()
-  })
-
+const formatDataset = computed(() => {
+  const keys = _.keys(props.dataset[0]);
+  const values = _.map(props.dataset, (data) => _.values(data));
+  return [keys, ...values];
 });
 
-const series = computed(() => [
-  {
-    data: props.dataset
-  }
-]);
+const dataRange = computed(() => {
+  const values = _.map(props.dataset, props.dataType);
+  return [_.min(values), _.max(values), _.mean(values)];
+});
 
-
+onMounted(() => {
+  // 初始化 chart
+  const { resize } = useBar($container, formatDataset, dataRange);
+  window.addEventListener("resize", () => {
+    resize();
+  });
+});
 </script>
 <template>
   <div ref="$container" class="container"></div>
+  <details>
+    <summary>dataset (formatted)</summary>
+    <pre>{{ formatDataset }}</pre>
+  </details>
+  <details>
+    <summary>dataset (origin)</summary>
+    <pre>{{ props.dataset }}</pre>
+  </details>
 </template>
 <style scoped>
 .container {

@@ -1,6 +1,5 @@
-import _ from 'lodash';
-import { defineStore } from 'pinia'
-
+import _ from "lodash";
+import { defineStore } from "pinia";
 
 const urlsCreator = (id, length) => {
   const url = `${import.meta.env.VITE_API_ENDPOINT}/page?owner=${id}&page=`;
@@ -51,30 +50,30 @@ const queueManager = (() => {
   };
 })();
 
-export const useArticlesStore = defineStore('articles', {
+export const useArticlesStore = defineStore("articles", {
   state: () => {
     return {
       isLoading: false,
-      userId: 'handred800',
+      userId: "handred800",
       articles: [],
-    }
+    };
   },
   actions: {
-    async loadData () {
+    async loadData() {
       this.isLoading = true;
 
-      this.articles = this.loadStorage() || await this.fetchData();
-      sessionStorage.setItem('articles', JSON.stringify(this.articles));
+      this.articles = this.loadStorage() || (await this.fetchData());
+      sessionStorage.setItem("articles", JSON.stringify(this.articles));
 
       this.isLoading = false;
     },
     loadStorage() {
-      const data = sessionStorage.getItem('articles');
+      const data = sessionStorage.getItem("articles");
       return data ? JSON.parse(data) : null;
     },
     async fetchData() {
       this.articles.splice(0);
-      
+
       const urls = urlsCreator(this.userId, 5);
       const requests = urls.map((url) => queueManager(url));
 
@@ -83,5 +82,5 @@ export const useArticlesStore = defineStore('articles', {
         return _.flatMap(data);
       });
     },
-  }
-})
+  },
+});
