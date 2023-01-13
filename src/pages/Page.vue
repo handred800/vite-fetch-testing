@@ -1,4 +1,10 @@
-<script setup></script>
+<script setup>
+import { useArticlesStore } from '../store';
+const { loadData } = useArticlesStore();
+
+loadData();
+
+</script>
 <template>
   <nav>
     <router-link to="/dashboard">Dashboard</router-link>

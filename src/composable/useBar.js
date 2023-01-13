@@ -70,6 +70,10 @@ const useBar = ($el, bindDataset, range) => {
         markLine: {
           data: [{ type: "average", name: "Avg", valueDim: 0 }],
         },
+        label: {
+          position: 'right',
+          show: false
+        },
         encode: {
           x: 1, // X axis.
           y: 0, // Y axis

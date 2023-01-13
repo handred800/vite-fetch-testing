@@ -1,6 +1,6 @@
 <script setup>
 import _ from "lodash";
-import { ref, computed, defineProps, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import useBar from "../composable/useBar";
 
 const props = defineProps({
@@ -35,17 +35,19 @@ onMounted(() => {
 <template>
   <div ref="$container" class="container"></div>
   <details>
-    <summary>dataset (formatted)</summary>
-    <pre>{{ formatDataset }}</pre>
-  </details>
-  <details>
-    <summary>dataset (origin)</summary>
+    <summary>dataset</summary>
     <pre>{{ props.dataset }}</pre>
   </details>
 </template>
 <style scoped>
 .container {
   width: 100%;
-  height: 500px;
+  height: 600px;
+}
+
+pre {
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>

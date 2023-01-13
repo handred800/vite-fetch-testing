@@ -5,7 +5,7 @@ import { useArticlesStore } from '../store';
 
 const router = useRouter();
 const useArticle = useArticlesStore();
-const { loadData } = useArticle;
+const { loadData, fetchData } = useArticle;
 const { isLoading, userId } = storeToRefs(useArticle);
 
 const onSubmit = async() => {
