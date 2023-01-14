@@ -152,6 +152,6 @@ textarea {
 }
 .template a {
   display: inline-block;
-  color: green;
+  color: var(--primary);
 }
 </style>

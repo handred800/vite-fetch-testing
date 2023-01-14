@@ -1,47 +1,55 @@
 <script setup>
+import _ from 'lodash';
+import { computed } from 'vue';
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router"
 import { useArticlesStore } from '../store';
 
 const router = useRouter();
 const useArticle = useArticlesStore();
-const { loadData, fetchData } = useArticle;
-const { isLoading, userId } = storeToRefs(useArticle);
+const { loadData } = useArticle;
+const { fetchLength, fetchingLength, isFetching, isLoading, userId } = storeToRefs(useArticle);
 
 const onSubmit = async() => {
     await loadData();
     router.push('/dashboard');
 }
 
+const limitCount = computed(() => import.meta.env.VITE_API_LIMIT_COUNT * 10);
+
+const fetchingPercent = computed(() => (_.round(fetchingLength.value / fetchLength.value, 2) * 100 ))
+
+
 </script>
 
 <template>
+  <h1>巴哈姆派+</h1>
   <form @submit.prevent="onSubmit">
     <input type="text" v-model="userId" :readonly="isLoading" />
     <button type="submit" :disabled="isLoading">
       {{ isLoading ? "loading..." : "GO!" }}
     </button>
   </form>
+
+  <div v-if="isLoading">
+    <span v-if="isFetching">約{{fetchLength * 10}}篇文章，撈取中...</span>
+    <div class="progress-bar">
+      <div class="bar" :style="{width: `${fetchingPercent}%`}"></div>
+    </div>
+  </div>
+  <div v-else>目前至多撈取前{{ limitCount }}篇文章</div>
 </template>
 
 <style scoped>
-.card {
-  display: block;
+.progress-bar {
+  background-color: lightgray;
   max-width: 500px;
   width: 100%;
-  padding: 15px 20px;
-  margin-bottom: 15px;
-  background: #fff;
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
-  box-sizing: border-box;
-  transition: 0.15s;
 }
-.card:hover {
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-pre {
-  white-space: pre-line;
+.progress-bar .bar {
+  display: block;
+  height: 20px;
+  background-color: var(--primary);
+  transition: .3s ease-in-out;
 }
 </style>

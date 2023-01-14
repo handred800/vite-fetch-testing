@@ -27,4 +27,8 @@ h5,
 p {
   margin: 0;
 }
+
+:root {
+  --primary: #117e96; 
+}
 </style>

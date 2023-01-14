@@ -11,49 +11,12 @@ const urlsCreator = (id, length) => {
   });
 };
 
-const queueManager = (() => {
-  let count = 0;
-
-  function formatter(data) {
-    const list = data.list.map(
-      ({ csn, title, coverpic, ctime, visit, gp, bahacoin, flagicon }) => ({
-        id: csn,
-        title,
-        image: coverpic,
-        createAt: ctime.split(' ')[0],
-        stats: {
-          view: Number(visit),
-          gp: Number(gp),
-          coin: Number(bahacoin.replaceAll(",", "")),
-        },
-      })
-    );
-    console.log(list);
-    return list;
-  }
-
-  // 使用 queueManager 回傳
-  return (url) => {
-    return new Promise((resolve) => {
-      count += 1;
-      setTimeout(() => {
-        fetch(url)
-          .then((res) => res.json())
-          .then(({ data }) => {
-            resolve(formatter(data));
-          })
-          .catch((err) => {
-            alert(err);
-            window.location.reload()
-          });
-      }, 1000 * count);
-    });
-  };
-})();
-
 export const useArticlesStore = defineStore("articles", {
   state: () => {
     return {
+      fetchLength: 0,
+      fetchingLength: 0,
+      isFetching: false,
       isLoading: false,
       userId: "handred800",
       articles: [],
@@ -75,14 +38,64 @@ export const useArticlesStore = defineStore("articles", {
     async fetchData() {
       this.articles.splice(0);
 
+      const store = this;
+      const apiLimitCount = Number(import.meta.env.VITE_API_LIMIT_COUNT);
       const { data } = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/page?owner=${this.userId}`).then(res => res.json())
-      const length = data.total_page >= 20 ? 20 : data.total_page;
+      const length = data.total_page >= apiLimitCount ? apiLimitCount : data.total_page;
+      this.fetchLength = length;
+      this.isFetching = true;
 
       const urls = urlsCreator(this.userId, length);
+
+
+      const queueManager = (() => {
+        let count = 0;
+        let fetchingCount = 0;
+      
+        function formatter(data) {
+          const list = data.list.map(
+            ({ csn, title, coverpic, ctime, visit, gp, bahacoin, flagicon }) => ({
+              id: csn,
+              title,
+              image: coverpic,
+              createAt: ctime.split(' ')[0],
+              stats: {
+                view: Number(visit),
+                gp: Number(gp),
+                coin: Number(bahacoin.replaceAll(",", "")),
+              },
+            })
+          );
+          console.log(list);
+          fetchingCount += 1;
+          store.fetchingLength = fetchingCount;
+          return list;
+        }
+      
+        // 使用 queueManager 回傳
+        return (url) => {
+          return new Promise((resolve) => {
+            count += 1;
+            setTimeout(() => {
+              fetch(url)
+                .then((res) => res.json())
+                .then(({ data }) => {
+                  resolve(formatter(data));
+                })
+                .catch((err) => {
+                  alert(err);
+                  window.location.reload()
+                });
+            }, 1000 * count);
+          });
+        };
+      })();
+
       const requests = urls.map((url) => queueManager(url));
 
       return Promise.all(requests).then((data) => {
         console.log("all fetches has sended");
+        this.isFetching = false;
         return _.flatMap(data);
       });
     },
