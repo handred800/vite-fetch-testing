@@ -9,7 +9,7 @@ import {
   DatasetComponent,
   VisualMapComponent,
 } from "echarts/components";
-import { BarChart } from "echarts/charts";
+import { BarChart, LineChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 import { unref, watchEffect } from "vue";
 
@@ -23,11 +23,12 @@ echarts.use([
   DataZoomComponent,
   VisualMapComponent,
   BarChart,
+  LineChart,
   CanvasRenderer,
 ]);
 
-const useBar = ($el, bindDataset, range) => {
-  const pieChart = echarts.init(unref($el));
+export const useBar = ($el, bindDataset, range) => {
+  const chart = echarts.init(unref($el));
 
   let option = {
     tooltip: {
@@ -87,15 +88,68 @@ const useBar = ($el, bindDataset, range) => {
     option.dataset = { source: unref(bindDataset) };
     option.visualMap.min = unref(range)[0];
     option.visualMap.max = unref(range)[1];
-    pieChart.setOption(option);
+    chart.setOption(option);
   }
 
   // 封裝resize
-  const resize = () => pieChart.resize();
+  const resize = () => chart.resize();
 
   //監聽資料 刷新圖表
   watchEffect(setDataset);
   return { resize };
 };
 
-export default useBar;
+
+export const useLine = ($el, bindDataset) => {
+  const chart = echarts.init(unref($el));
+
+  let option = {
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "shadow",
+      },
+    },
+    // toolbox: {
+    //   show: true,
+    //   feature: {
+    //     restore: { show: true },
+    //     saveAsImage: { show: true },
+    //   },
+    // },
+    // grid: { containLabel: true },
+    xAxis: { type: "category", triggerEvent: true },
+    yAxis: { name: "value" },
+    series: [
+      {
+        type: "line",
+        symbolSize: 20,
+        selectedMode: 'single',
+        select: {
+          itemStyle: {
+            color: '#000',
+            borderColor: '#000'
+          }
+        },
+        markLine: {
+          data: [{ type: "average", name: "Avg", valueDim: 0 }],
+        },
+      },
+    ],
+  };
+
+  // 刷新 function
+  function setDataset() {
+    option.dataset = { source: unref(bindDataset) };
+    chart.setOption(option);
+  }
+
+  // 封裝resize
+  const resize = () => chart.resize();
+  
+
+  //監聽資料 刷新圖表
+  watchEffect(setDataset);
+  return { chart, resize };
+};
+

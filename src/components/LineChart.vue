@@ -1,7 +1,7 @@
 <script setup>
 import _ from "lodash";
 import { ref, computed, onMounted } from "vue";
-import { useBar } from "../composable/useChart";
+import { useLine } from "../composable/useChart";
 
 
 const props = defineProps({
@@ -12,6 +12,8 @@ const props = defineProps({
   dataType: String,
 });
 
+const emit = defineEmits(['clickData'])
+
 const $container = ref(null);
 
 const formatDataset = computed(() => {
@@ -20,17 +22,15 @@ const formatDataset = computed(() => {
   return [keys, ...values];
 });
 
-const dataRange = computed(() => {
-  const values = _.map(props.dataset, props.dataType);
-  return [_.min(values), _.max(values), _.mean(values)];
-});
-
 onMounted(() => {
   // 初始化 chart
-  const { resize } = useBar($container, formatDataset, dataRange);
+  const { chart, resize } = useLine($container, formatDataset);
   window.addEventListener("resize", () => {
     resize();
   });
+  chart.on('click', (e) => {
+    emit('clickData', e.data[0]);
+  })
 });
 </script>
 <template>

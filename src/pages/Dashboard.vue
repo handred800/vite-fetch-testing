@@ -1,13 +1,16 @@
 <script setup>
   import _ from 'lodash';
-  import dayjs from 'dayjs';
   import { storeToRefs } from 'pinia';
   import { ref, computed } from 'vue';
   import { useArticlesStore } from '../store';
+  import { thousandFormat } from "../helper/utils";
+  import LineChart from "../components/LineChart.vue";
+import { FunnelChart } from 'echarts/charts';
 
   const articleStore = useArticlesStore();
   const { articles } = storeToRefs(articleStore);
 
+  
   // 年度 select
   const filterYear = ref('');
   const yearOptions = computed(() => {
@@ -18,7 +21,7 @@
   }) 
 
   // 數據type select
-  const filterStats = ref('createAt');
+  const filterStats = ref('stats.view');
 
   // filter
   function filterWith(list) {
@@ -31,6 +34,17 @@
 
   const filterPipe = _.flow([filterWith, orderWith]);
   const filtedArticles = computed(() => filterPipe(articles.value));
+
+  // line chart
+  const dataset = computed(() => {
+    let list = _.groupBy(articles.value, (article) => (article.createAt.slice(0, 4)));
+    list = _.mapValues(list, (articlesByYear) => _.sumBy(articlesByYear, filterStats.value));
+    return _.toPairs(list);
+  })
+  // line chart 互動
+  function setYear(year) {
+    filterYear.value = year;
+  }
  
   // 加總數據
   const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) => sum + current.stats[statsName], 0);
@@ -54,48 +68,26 @@
     </select>
   </fieldset>
   <p>共 {{filtedArticles.length}} 篇文章
-    、{{ totalStats('view') }} 觀看數
-    、{{ totalStats('gp') }} GP
-    、{{ totalStats('coin') }} 巴幣
+    、{{ thousandFormat(totalStats('view')) }} 觀看數
+    、{{ thousandFormat(totalStats('gp')) }} GP
+    、{{ thousandFormat(totalStats('coin')) }} 巴幣
   </p>
+  <line-chart :dataset="dataset" data-type="view" @click-data="setYear"></line-chart>
   <details open>
     <summary>排行</summary>
     <div class="template">
       <ul>
         <li v-for="(article, index) in filtedArticles" :key="article.id">
-          <div style="display: flex;">
+          <div style="display: flex; flex: 1;">
             <span style="margin-right: 10px">{{ index+1 }}</span>
             <a target="_blank" :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{article.title}}</a>
           </div>
           {{ _.get(article, filterStats) }}
         </li>
       </ul>
-      <!-- <textarea readonly>
-        {{ filtedArticles }}
-      </textarea> -->
     </div>
   </details>
-  <!-- <div class="card-list">
-    <a
-      v-for="article in filtedArticles"
-      :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`"
-      class="card card-sm"
-      style="margin-right: 15px"
-      target="_blank"
-      :key="article.id"
-    >
-      <h4>{{ article.title }}</h4>
-      <p>{{ article.createAt }}</p>
-      <div style="display: flex">
-        <img :src="article.image" alt="" />
-        <ul>
-          <li>view：{{ article.stats.view }}</li>
-          <li>gp：{{ article.stats.gp }}</li>
-          <li>coin：{{ article.stats.coin }}</li>
-        </ul>
-      </div>
-    </a>
-  </div> -->
+
 </template>
 
 <style scoped>
@@ -139,7 +131,9 @@ textarea {
 }
 
 .template {
-  width: 50%;
+  display: block;
+  width: 100%;
+  max-width: 1024px;
   max-height: 500px;
   overflow-y: auto;
 }
@@ -153,5 +147,9 @@ textarea {
 .template a {
   display: inline-block;
   color: var(--primary);
+}
+.template a:hover,
+.template a:focus {
+  text-decoration: underline;
 }
 </style>
