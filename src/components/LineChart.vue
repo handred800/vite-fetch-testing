@@ -35,10 +35,10 @@ onMounted(() => {
 </script>
 <template>
   <div ref="$container" class="container"></div>
-  <details>
+  <!-- <details>
     <summary>dataset</summary>
     <pre>{{ props.dataset }}</pre>
-  </details>
+  </details> -->
 </template>
 <style scoped>
 .container {

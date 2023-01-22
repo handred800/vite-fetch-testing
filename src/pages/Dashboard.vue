@@ -3,9 +3,8 @@
   import { storeToRefs } from 'pinia';
   import { ref, computed } from 'vue';
   import { useArticlesStore } from '../store';
-  import { thousandFormat } from "../helper/utils";
+  import { thousandFormat, filterWith, orderWith } from "../helper/utils";
   import LineChart from "../components/LineChart.vue";
-import { FunnelChart } from 'echarts/charts';
 
   const articleStore = useArticlesStore();
   const { articles } = storeToRefs(articleStore);
@@ -23,23 +22,19 @@ import { FunnelChart } from 'echarts/charts';
   // 數據type select
   const filterStats = ref('stats.view');
 
-  // filter
-  function filterWith(list) {
-    return _.filter(list, (item) => item.createAt.startsWith(filterYear.value))
-  }
-  // order
-  function orderWith(list) {
-    return _.orderBy(list, [filterStats.value], ['desc'])
-  }
-
-  const filterPipe = _.flow([filterWith, orderWith]);
-  const filtedArticles = computed(() => filterPipe(articles.value));
+  const filtedArticles = computed(() => {
+    const filterPipe = _.flow([filterWith(filterYear.value), orderWith(filterStats.value)]);
+    return filterPipe(articles.value);
+  });
 
   // line chart
   const dataset = computed(() => {
-    let list = _.groupBy(articles.value, (article) => (article.createAt.slice(0, 4)));
-    list = _.mapValues(list, (articlesByYear) => _.sumBy(articlesByYear, filterStats.value));
-    return _.toPairs(list);
+
+    const yearFilter = (list) => _.groupBy(list, (article) => (article.createAt.slice(0, 4)))
+    const sumFunc = (list) => _.mapValues(list, (articlesByYear) => _.sumBy(articlesByYear, filterStats.value));
+    const pipe = _.flow([yearFilter, sumFunc, _.toPairs])
+
+    return pipe(articles.value);
   })
   // line chart 互動
   function setYear(year) {

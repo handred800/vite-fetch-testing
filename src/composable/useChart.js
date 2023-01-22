@@ -12,6 +12,7 @@ import {
 import { BarChart, LineChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 import { unref, watchEffect } from "vue";
+import { thousandFormat } from "../helper/utils";
 
 echarts.use([
   ToolboxComponent,
@@ -109,7 +110,17 @@ export const useLine = ($el, bindDataset) => {
       axisPointer: {
         type: "shadow",
       },
+      formatter: (data) => {
+        return `<b>${data[0].value[0]}:</b> ${thousandFormat(data[0].value[1])}`
+      },
     },
+    dataZoom: [
+      { type: "inside", xAxisIndex: 0 },
+      {
+        type: "slider",
+        xAxisIndex: 0,
+      },
+    ],
     // toolbox: {
     //   show: true,
     //   feature: {
@@ -118,21 +129,25 @@ export const useLine = ($el, bindDataset) => {
     //   },
     // },
     // grid: { containLabel: true },
-    xAxis: { type: "category", triggerEvent: true },
+    xAxis: { type: "category" },
     yAxis: { name: "value" },
     series: [
       {
         type: "line",
         symbolSize: 20,
+        showAllSymbol: true,
         selectedMode: 'single',
-        select: {
-          itemStyle: {
-            color: '#000',
-            borderColor: '#000'
+        color: '#117e96',
+        label: {
+          show: true,
+          formatter: ({value}) => {
+            return thousandFormat(value[1])
           }
         },
-        markLine: {
-          data: [{ type: "average", name: "Avg", valueDim: 0 }],
+        select: {
+          itemStyle: {
+            color: '#117e96',
+          }
         },
       },
     ],
