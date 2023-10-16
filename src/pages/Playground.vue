@@ -2,28 +2,94 @@
 import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import _ from "lodash";
+import { thousandFormat, filterWith, orderWith } from "../helper/utils";
 import { useArticlesStore } from "../store";
-import BarChart from "../components/BarChart.vue";
+import LineChart from "../components/LineChart.vue";
 
 const articleStore = useArticlesStore();
 const { articles } = storeToRefs(articleStore);
 
-let dataType = ref("view");
-const dataset = computed(() =>
-  _.map(articles.value, (article) => ({
-    title: article.title,
-    [dataType.value]: article.stats[dataType.value],
-  }))
-);
+// 年度 select
+const filterYear = ref('');
+const yearOptions = computed(() => {
+  const options = _.map(articles.value, ({ createAt }) => Number(createAt.slice(0, 4)));
+  const orderDesc = (list) => _.orderBy(list, [], ['desc'])
+  const pipe = _.flow([_.uniq, orderDesc])
+  return pipe(options)
+})
+
+const sortingWith = ref('createAt');
+// 數據type select
+const filterStats = ref('stats.view');
+
+const filtedArticles = computed(() => {
+  const filterPipe = _.flow([filterWith(filterYear.value), orderWith(sortingWith.value)]);
+  return filterPipe(articles.value);
+});
+
+// line chart
+const dataset = computed(() => {
+
+  const yearFilter = (list) => _.groupBy(list, (article) => (article.createAt.slice(0, 4)))
+  const sumFunc = (list) => _.mapValues(list, (articlesByYear) => _.sumBy(articlesByYear, filterStats.value));
+  const pipe = _.flow([yearFilter, sumFunc, _.toPairs])
+
+  return pipe(articles.value);
+})
+// line chart 互動
+function setYear(year) {
+  filterYear.value = year;
+}
+
+// 加總數據
+const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) => sum + current.stats[statsName], 0);
+
+
 </script>
 
 <template>
-  <select name="" id="" v-model="dataType">
-    <option value="view">觀看數</option>
-    <option value="gp">GP</option>
-    <option value="coin">巴幣</option>
-  </select>
-  <bar-chart :dataset="dataset" :data-type="dataType"></bar-chart>
+  <fieldset>
+    <legend>控制項</legend>
+    年度:
+    <select v-model="filterYear">
+      <option value="">全部</option>
+      <option :value="option" v-for="option in yearOptions">{{ option }}</option>
+    </select>
+    數據:
+    <select v-model="filterStats">
+      <option value="stats.view">觀看數</option>
+      <option value="stats.gp">GP</option>
+      <option value="stats.coin">巴幣</option>
+    </select>
+  </fieldset>
+  <p>共 {{ filtedArticles.length }} 篇文章
+    、{{ thousandFormat(totalStats('view')) }} 觀看數
+    、{{ thousandFormat(totalStats('gp')) }} GP
+    、{{ thousandFormat(totalStats('coin')) }} 巴幣
+  </p>
+  <div class="grid">
+    <div class="col-6">
+      <line-chart :dataset="dataset" @click-data="setYear"></line-chart>
+    </div>
+    <div class="col-6">
+      排序：
+      <select v-model="sortingWith">
+        <option value="createAt">時間</option>
+        <option :value="filterStats">數據</option>
+      </select>
+      <div class="template">
+        <ul>
+          <li v-for="article in filtedArticles" :key="article.id">
+            <div>
+              <a target="_blank" :title="article.createAt"
+                :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{ article.title }}</a>
+            </div>
+            <div style="white-space: nowrap;padding-left: 10px;">{{ _.get(article, filterStats) }}</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>

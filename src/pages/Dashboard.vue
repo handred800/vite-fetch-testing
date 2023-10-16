@@ -1,150 +1,86 @@
 <script setup>
-  import _ from 'lodash';
-  import { storeToRefs } from 'pinia';
-  import { ref, computed } from 'vue';
-  import { useArticlesStore } from '../store';
-  import { thousandFormat, filterWith, orderWith } from "../helper/utils";
-  import LineChart from "../components/LineChart.vue";
+import _ from 'lodash';
+import { storeToRefs } from 'pinia';
+import { ref, computed } from 'vue';
+import { useArticlesStore } from '../store';
+import { thousandFormat } from "../helper/utils";
+import BarChart from '../components/BarChart.vue';
 
-  const articleStore = useArticlesStore();
-  const { articles } = storeToRefs(articleStore);
+const articleStore = useArticlesStore();
+const { articles } = storeToRefs(articleStore);
 
-  
-  // 年度 select
-  const filterYear = ref('');
-  const yearOptions = computed(() => {
-    const options = _.map(articles.value, ({createAt}) => Number(createAt.slice(0, 4)));
-    const orderDesc = (list) => _.orderBy(list, [], ['desc'])
-    const pipe = _.flow([_.uniq, orderDesc])
-    return pipe(options)
-  }) 
-
-  // 數據type select
-  const filterStats = ref('stats.view');
-
-  const filtedArticles = computed(() => {
-    const filterPipe = _.flow([filterWith(filterYear.value), orderWith(filterStats.value)]);
-    return filterPipe(articles.value);
-  });
-
-  // line chart
-  const dataset = computed(() => {
-
-    const yearFilter = (list) => _.groupBy(list, (article) => (article.createAt.slice(0, 4)))
-    const sumFunc = (list) => _.mapValues(list, (articlesByYear) => _.sumBy(articlesByYear, filterStats.value));
-    const pipe = _.flow([yearFilter, sumFunc, _.toPairs])
-
-    return pipe(articles.value);
+// 1.總和數據
+const statsTotal = computed(() => {
+  const total = articles.value.map(({ stats }) => stats).reduce((acc, item) => {
+    return {
+      gp: acc.gp + item.gp,
+      view: acc.view + item.view,
+      coin: acc.coin + item.coin,
+    }
   })
-  // line chart 互動
-  function setYear(year) {
-    filterYear.value = year;
-  }
- 
-  // 加總數據
-  const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) => sum + current.stats[statsName], 0);
-  
+  return { count: articles.value.length, ...total };
+})
+
+// 2.最近 n 篇文章數據
+const currentCount = ref(10);
+const currentType = ref('view');
+const currentArticles = computed(() => {
+  return articles.value.slice(0, currentCount.value).map((article) => {
+    return {
+      title: article.title,
+      [currentType.value]: article.stats[currentType.value],
+      createAt: article.createAt,
+      id: article.id,
+    }
+  })
+})
+
 </script>
 
 <template>
-  <fieldset>
-    <legend>控制項</legend>
-    年度: 
-    <select v-model="filterYear">
-      <option value="">全部</option>
-      <option :value="option" v-for="option in yearOptions">{{ option }}</option>
-    </select>
-    排序:
-    <select v-model="filterStats">
-      <option value="createAt">發佈日期</option>
-      <option value="stats.view">觀看數</option>
-      <option value="stats.gp">GP</option>
-      <option value="stats.coin">巴幣</option>
-    </select>
-  </fieldset>
-  <p>共 {{filtedArticles.length}} 篇文章
-    、{{ thousandFormat(totalStats('view')) }} 觀看數
-    、{{ thousandFormat(totalStats('gp')) }} GP
-    、{{ thousandFormat(totalStats('coin')) }} 巴幣
-  </p>
-  <line-chart :dataset="dataset" data-type="view" @click-data="setYear"></line-chart>
-  <details open>
-    <summary>排行</summary>
-    <div class="template">
-      <ul>
-        <li v-for="(article, index) in filtedArticles" :key="article.id">
-          <div style="display: flex; flex: 1;">
-            <span style="margin-right: 10px">{{ index+1 }}</span>
-            <a target="_blank" :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{article.title}}</a>
-          </div>
-          {{ _.get(article, filterStats) }}
-        </li>
-      </ul>
+  <div class="grid">
+    <div class="col-3_md-6_sm-12">
+      <div class="card">文章數：{{ thousandFormat(statsTotal.count) }}</div>
     </div>
-  </details>
+    <div class="col-3_md-6_sm-12">
+      <div class="card">GP：{{ thousandFormat(statsTotal.gp) }}</div>
+    </div>
+    <div class="col-3_md-6_sm-12">
+      <div class="card">觀看：{{ thousandFormat(statsTotal.view) }}</div>
+    </div>
+    <div class="col-3_md-6_sm-12">
+      <div class="card">巴幣：{{ thousandFormat(statsTotal.coin) }}</div>
+    </div>
+  </div>
+  最新
+  <select v-model="currentCount">
+    <option :value="10">10</option>
+    <option :value="20">20</option>
+    <option :value="30">30</option>
+  </select>
+  篇文章
 
+  <select v-model="currentType">
+    <option value="view">view</option>
+    <option value="gp">gp</option>
+  </select>
+
+  <div class="grid">
+    <div class="col-6_sm-12">
+      <bar-chart :dataset="currentArticles" :data-type="currentType"></bar-chart>
+    </div>
+    <div class="col-6_sm-12">
+      <div class="template">
+        <ul>
+          <li v-for="article in currentArticles" :key="article.id">
+            <div>
+              <a target="_blank" :title="article.createAt"
+                :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{ article.title }}</a>
+            </div>
+            <div style="white-space: nowrap;padding-left: 10px;">{{ article.createAt }}</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </template>
-
-<style scoped>
-.card-list {
-  display: flex;
-  overflow-x: auto;
-}
-.card-list .card {
-  flex: 0 0 300px;
-}
-.card {
-  display: block;
-  max-width: 500px;
-  width: 100%;
-  padding: 15px 20px;
-  background: #fff;
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
-  box-sizing: border-box;
-  transition: 0.15s;
-}
-.card-sm {
-  max-width: 300px;
-  padding: 5px 10px;
-}
-.card:hover {
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-.card img {
-  width: 100px;
-  height: 100px;
-  object-fit: contain;
-  background-color: silver;
-}
-
-textarea {
-  display: block;
-  width: 100%;
-  resize: vertical;
-  /* white-space: pre-line; */
-}
-
-.template {
-  display: block;
-  width: 100%;
-  max-width: 1024px;
-  max-height: 500px;
-  overflow-y: auto;
-}
-.template ul {
-  padding: 0 15px;
-}
-.template li {
-  display: flex;
-  justify-content: space-between;
-}
-.template a {
-  display: inline-block;
-  color: var(--primary);
-}
-.template a:hover,
-.template a:focus {
-  text-decoration: underline;
-}
-</style>

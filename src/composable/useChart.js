@@ -38,25 +38,17 @@ export const useBar = ($el, bindDataset, range) => {
         type: "shadow",
       },
     },
-    // toolbox: {
-    //   show: true,
-    //   feature: {
-    //     restore: { show: true },
-    //     saveAsImage: { show: true },
+    xAxis: { type: "category", show: false, triggerEvent: true },
+    yAxis: { name: "value", triggerEvent: true },
+    // dataZoom: [
+    //   { type: "inside", xAxisIndex: 0 },
+    //   {
+    //     type: "slider",
+    //     xAxisIndex: 0,
+    //     start: 0,
+    //     end: 30,
     //   },
-    // },
-    // grid: { containLabel: true },
-    xAxis: { name: "amount" },
-    yAxis: { type: "category", show: false },
-    dataZoom: [
-      { type: "inside", yAxisIndex: 0 },
-      {
-        type: "slider",
-        yAxisIndex: 0,
-        start: 0,
-        end: 30,
-      },
-    ],
+    // ],
     visualMap: {
       orient: "horizontal",
       left: "center",
@@ -70,15 +62,15 @@ export const useBar = ($el, bindDataset, range) => {
       {
         type: "bar",
         markLine: {
-          data: [{ type: "average", name: "Avg", valueDim: 0 }],
+          data: [{ type: "average", name: "Avg" }, {name: 'www', yAxis: 100}],
         },
         label: {
           position: 'right',
           show: false
         },
         encode: {
-          x: 1, // X axis.
-          y: 0, // Y axis
+          x: 0, // X axis.
+          y: 1, // Y axis
         },
       },
     ],
@@ -97,7 +89,7 @@ export const useBar = ($el, bindDataset, range) => {
 
   //監聽資料 刷新圖表
   watchEffect(setDataset);
-  return { resize };
+  return { chart, resize };
 };
 
 

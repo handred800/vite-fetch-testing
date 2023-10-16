@@ -27,18 +27,19 @@ const dataRange = computed(() => {
 
 onMounted(() => {
   // 初始化 chart
-  const { resize } = useBar($container, formatDataset, dataRange);
+  const { chart, resize } = useBar($container, formatDataset, dataRange);
   window.addEventListener("resize", () => {
     resize();
   });
+  chart.on('click', (e) => {console.log(e);})
 });
 </script>
 <template>
   <div ref="$container" class="container"></div>
-  <details>
+  <!-- <details>
     <summary>dataset</summary>
     <pre>{{ props.dataset }}</pre>
-  </details>
+  </details> -->
 </template>
 <style scoped>
 .container {

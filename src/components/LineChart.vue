@@ -8,8 +8,7 @@ const props = defineProps({
   dataset: {
     type: Array,
     required: true,
-  },
-  dataType: String,
+  }
 });
 
 const emit = defineEmits(['clickData'])
@@ -28,8 +27,17 @@ onMounted(() => {
   window.addEventListener("resize", () => {
     resize();
   });
-  chart.on('click', (e) => {
-    emit('clickData', e.data[0]);
+  // chart.on('click', (e) => { console.log(e.data); emit('clickData', e.data[0]) })
+  chart.on('selectchanged', (e) => {
+    if (e.selected.length === 0) {
+      // 沒有選
+      emit('clickData', '')
+    } else {
+      // dataIndex 為選中項目的序號
+      // echart 有多選功能，所以是以陣列包裹(這邊只用到單選; [0]即可取到)
+      const i = e.selected[0].dataIndex[0];
+      emit('clickData', formatDataset.value[i + 1][0]);
+    };
   })
 });
 </script>
