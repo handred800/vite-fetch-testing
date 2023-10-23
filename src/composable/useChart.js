@@ -8,8 +8,9 @@ import {
   DataZoomComponent,
   DatasetComponent,
   VisualMapComponent,
+  CalendarComponent,
 } from "echarts/components";
-import { BarChart, LineChart } from "echarts/charts";
+import { BarChart, LineChart, HeatmapChart, ScatterChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 import { unref, watchEffect } from "vue";
 import { thousandFormat } from "../helper/utils";
@@ -23,8 +24,11 @@ echarts.use([
   DatasetComponent,
   DataZoomComponent,
   VisualMapComponent,
+  CalendarComponent,
   BarChart,
   LineChart,
+  HeatmapChart,
+  ScatterChart,
   CanvasRenderer,
 ]);
 
@@ -32,6 +36,14 @@ export const useBar = ($el, bindDataset, range) => {
   const chart = echarts.init(unref($el));
 
   let option = {
+    toolbox: {
+      feature: {
+        saveAsImage: {
+          // name: '下載圖片',
+          title: '下載圖片',
+        }
+      },
+    },
     tooltip: {
       trigger: "axis",
       axisPointer: {
@@ -61,9 +73,6 @@ export const useBar = ($el, bindDataset, range) => {
     series: [
       {
         type: "bar",
-        markLine: {
-          data: [{ type: "average", name: "Avg" }, {name: 'www', yAxis: 100}],
-        },
         label: {
           position: 'right',
           show: false
@@ -71,6 +80,9 @@ export const useBar = ($el, bindDataset, range) => {
         encode: {
           x: 0, // X axis.
           y: 1, // Y axis
+        },
+        markLine: {
+          data: [{ type: "average", name: "Avg" }],
         },
       },
     ],
@@ -91,7 +103,6 @@ export const useBar = ($el, bindDataset, range) => {
   watchEffect(setDataset);
   return { chart, resize };
 };
-
 
 export const useLine = ($el, bindDataset) => {
   const chart = echarts.init(unref($el));
@@ -132,7 +143,7 @@ export const useLine = ($el, bindDataset) => {
         color: '#117e96',
         label: {
           show: true,
-          formatter: ({value}) => {
+          formatter: ({ value }) => {
             return thousandFormat(value[1])
           }
         },
@@ -153,10 +164,59 @@ export const useLine = ($el, bindDataset) => {
 
   // 封裝resize
   const resize = () => chart.resize();
-  
+
 
   //監聽資料 刷新圖表
   watchEffect(setDataset);
   return { chart, resize };
 };
+
+export const useCalendarMap = ($el, bindDataset, range, time) => {
+  const chart = echarts.init(unref($el));
+  const option = {
+    visualMap: {
+      // show: false,
+      type: 'piecewise',
+      orient: 'horizontal',
+      left: 'center',
+      // top: 65,
+      inRange: {
+        color: ["#65B581", "#FFCE34", "#FD665F"],
+      },
+    },
+    tooltip: {
+      formatter: (res) => {
+        const { data, marker } = res;
+        return `<b>${data[0]}</b><br>
+                ${marker}${thousandFormat(data[1])}
+                `
+      },
+    },
+    calendar: {
+      cellSize: ['auto', 20],
+    },
+    series: [
+      {
+        type: 'heatmap',
+        coordinateSystem: 'calendar',
+      },
+    ],
+  }
+
+  // 刷新 function
+  function setDataset() {
+    option.dataset = { source: unref(bindDataset) };
+    option.visualMap.min = unref(range)[0];
+    option.visualMap.max = unref(range)[1];
+    option.calendar.range = unref(time);
+    chart.setOption(option);
+  }
+
+  // 封裝resize
+  const resize = () => chart.resize();
+
+  //監聽資料 刷新圖表
+  watchEffect(setDataset);
+  return { chart, resize };
+}
 

@@ -22,6 +22,14 @@ export const useArticlesStore = defineStore("articles", {
       articles: [],
     };
   },
+  getters: {
+    years() {
+      return _.chain(this.articles).map(({ createAt }) => createAt.slice(0, 4)).uniq().value();
+    },
+    articlesGroupByTime() {
+      return _.groupBy(this.articles, 'createAt');
+    },
+  },
   actions: {
     async loadData() {
       this.isLoading = true;
@@ -46,7 +54,6 @@ export const useArticlesStore = defineStore("articles", {
       this.isFetching = true;
 
       const urls = urlsCreator(this.userId, length);
-
 
       const queueManager = (() => {
         let count = 0;
@@ -94,10 +101,13 @@ export const useArticlesStore = defineStore("articles", {
       const requests = urls.map((url) => queueManager(url));
 
       return Promise.all(requests).then((data) => {
-        console.log("all fetches has sended");
+        console.log("all fetches has returned");
         this.isFetching = false;
-        return _.flatMap(data);
+        return _.chain(data).flatten().uniqBy('id').value();
       });
     },
+    clearData() {
+      sessionStorage.clear();
+    }
   },
 });

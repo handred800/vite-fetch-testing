@@ -5,9 +5,10 @@ import { ref, computed } from 'vue';
 import { useArticlesStore } from '../store';
 import { thousandFormat } from "../helper/utils";
 import BarChart from '../components/BarChart.vue';
+import HeatMap from '../components/HeatMap.vue';
 
 const articleStore = useArticlesStore();
-const { articles } = storeToRefs(articleStore);
+const { articles, years, articlesGroupByTime } = storeToRefs(articleStore);
 
 // 1.總和數據
 const statsTotal = computed(() => {
@@ -21,19 +22,40 @@ const statsTotal = computed(() => {
   return { count: articles.value.length, ...total };
 })
 
+const articleFormatterFactory = (statName) => {
+  return (article) => {
+    return {
+      title: article.title,
+      [statName]: article.stats[statName],
+      createAt: article.createAt,
+      id: article.id,
+    }
+  }
+}
+
 // 2.最近 n 篇文章數據
 const currentCount = ref(10);
 const currentType = ref('view');
 const currentArticles = computed(() => {
-  return articles.value.slice(0, currentCount.value).map((article) => {
-    return {
-      title: article.title,
-      [currentType.value]: article.stats[currentType.value],
-      createAt: article.createAt,
-      id: article.id,
-    }
-  })
+  return articles.value.slice(0, currentCount.value).map(articleFormatterFactory(currentType.value))
 })
+
+// 3.月曆圖
+const heatMapCurrentDate = ref(null);
+const heatMapYear = ref(years.value[0]);
+const heatMapType = ref('view');
+const heatMapArticles = computed(() => {
+  return _.chain(articlesGroupByTime.value)
+    .mapValues((items) => {
+      return _.sumBy(items, (item) => item.stats[heatMapType.value]);
+    })
+    .toPairs()
+    .value()
+})
+
+const clickCalndar = (e) => {
+  heatMapCurrentDate.value = e.data[0];
+}
 
 </script>
 
@@ -82,5 +104,39 @@ const currentArticles = computed(() => {
         </ul>
       </div>
     </div>
+  </div>
+
+  <div>
+    <select v-model="heatMapYear">
+      <option :value="y" v-for="y in years" :key="y">{{ y }}</option>
+    </select>
+    <select v-model="heatMapType">
+      <option value="view">view</option>
+      <option value="gp">gp</option>
+    </select>
+    <HeatMap :dataset="heatMapArticles" :time="heatMapYear" :dataType="heatMapType" :clickEvent="clickCalndar"></HeatMap>
+    <ul>
+      <li v-for="article in articlesGroupByTime[heatMapCurrentDate]" :key="article.id">
+        <a
+        :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`"
+        class="card"
+        target="_blank"
+        :key="article.id"
+      >
+        <h4>{{ article.title }}</h4>
+        <p>{{ article.createAt }}</p>
+        <div style="display: flex">
+          <img :src="article.image" alt="" style="max-width: 100px" />
+          <ul>
+            <li>view：{{ article.stats.view }}</li>
+            <li>gp：{{ article.stats.gp }}</li>
+            <li>coin：{{ article.stats.coin }}</li>
+          </ul>
+        </div>
+    
+        <!-- <pre>{{ res }}</pre> -->
+      </a>
+      </li>
+    </ul>
   </div>
 </template>

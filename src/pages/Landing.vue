@@ -19,7 +19,6 @@ const limitCount = computed(() => import.meta.env.VITE_API_LIMIT_COUNT * 10);
 
 const fetchingPercent = computed(() => (_.round(fetchingLength.value / fetchLength.value, 2) * 100 ))
 
-
 </script>
 
 <template>
@@ -49,6 +48,7 @@ const fetchingPercent = computed(() => (_.round(fetchingLength.value / fetchLeng
 .progress-bar .bar {
   display: block;
   height: 20px;
+  width: 0;
   background-color: var(--primary);
   transition: .3s ease-in-out;
 }
