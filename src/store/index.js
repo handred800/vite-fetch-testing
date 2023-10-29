@@ -47,7 +47,7 @@ export const useArticlesStore = defineStore("articles", {
       this.articles.splice(0);
 
       const store = this;
-      const apiLimitCount = Number(import.meta.env.VITE_API_LIMIT_COUNT);
+      const apiLimitCount = import.meta.env.PROD ? Number(import.meta.env.VITE_API_LIMIT_COUNT) : 100;
       const { data } = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/page?owner=${this.userId}`).then(res => res.json())
       const length = data.total_page >= apiLimitCount ? apiLimitCount : data.total_page;
       this.fetchLength = length;

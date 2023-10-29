@@ -9,6 +9,7 @@ import {
   DatasetComponent,
   VisualMapComponent,
   CalendarComponent,
+  MarkLineComponent,
 } from "echarts/components";
 import { BarChart, LineChart, HeatmapChart, ScatterChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
@@ -25,6 +26,7 @@ echarts.use([
   DataZoomComponent,
   VisualMapComponent,
   CalendarComponent,
+  MarkLineComponent,
   BarChart,
   LineChart,
   HeatmapChart,
@@ -52,27 +54,21 @@ export const useBar = ($el, bindDataset, range) => {
     },
     xAxis: { type: "category", show: false, triggerEvent: true },
     yAxis: { name: "value", triggerEvent: true },
-    // dataZoom: [
-    //   { type: "inside", xAxisIndex: 0 },
-    //   {
-    //     type: "slider",
-    //     xAxisIndex: 0,
-    //     start: 0,
-    //     end: 30,
-    //   },
-    // ],
-    visualMap: {
-      orient: "horizontal",
-      left: "center",
-      text: ["High", "Low"],
-      dimension: 1,
-      inRange: {
-        color: ["#65B581", "#FFCE34", "#FD665F"],
+    dataZoom: [
+      { 
+        type: "inside",
+        xAxisIndex: 0,
+        filterMode: 'none'
       },
-    },
+      {
+        type: "slider",
+        xAxisIndex: 0,
+      },
+    ],
     series: [
       {
         type: "bar",
+        color: '#117e96',
         label: {
           position: 'right',
           show: false
@@ -82,7 +78,33 @@ export const useBar = ($el, bindDataset, range) => {
           y: 1, // Y axis
         },
         markLine: {
-          data: [{ type: "average", name: "Avg" }],
+          symbol: ['none', 'none'],
+          precision: 0,
+          animationEasing: 'quarticOut',
+          emphasis: {
+            disabled: true
+          },
+          data: [
+            { 
+              type: "average",
+              name: '平均值',
+              lineStyle: {
+                type: 'solid',
+                color: '#F44336',
+                width: 2,
+              },
+              label: {
+                borderWidth: 1,
+                padding: 5,
+                color: '#fff',
+                backgroundColor: '#F44336',
+                lineHeight: 16,
+                shadowColor: 'rgba(0,0,0,.15)',
+                shadowBlur: 10,
+                formatter: (e) => (`${e.name}\n${e.value}`),
+              },
+            }
+          ],
         },
       },
     ],
@@ -91,8 +113,6 @@ export const useBar = ($el, bindDataset, range) => {
   // 刷新 function
   function setDataset() {
     option.dataset = { source: unref(bindDataset) };
-    option.visualMap.min = unref(range)[0];
-    option.visualMap.max = unref(range)[1];
     chart.setOption(option);
   }
 
@@ -181,7 +201,7 @@ export const useCalendarMap = ($el, bindDataset, range, time) => {
       left: 'center',
       // top: 65,
       inRange: {
-        color: ["#65B581", "#FFCE34", "#FD665F"],
+        color: ["#65B581", "#FFCE34", "#F44336"],
       },
     },
     tooltip: {

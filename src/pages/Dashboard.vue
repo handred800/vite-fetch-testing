@@ -34,10 +34,11 @@ const articleFormatterFactory = (statName) => {
 }
 
 // 2.最近 n 篇文章數據
-const currentCount = ref(10);
 const currentType = ref('view');
+const currentIsSorted = ref(false);
 const currentArticles = computed(() => {
-  return articles.value.slice(0, currentCount.value).map(articleFormatterFactory(currentType.value))
+  const formattedArticles = articles.value.map(articleFormatterFactory(currentType.value));
+  return currentIsSorted.value ? formattedArticles.sort((a, b) => (b[currentType.value] - a[currentType.value])) : formattedArticles;
 })
 
 // 3.月曆圖
@@ -74,18 +75,17 @@ const clickCalndar = (e) => {
       <div class="card">巴幣：{{ thousandFormat(statsTotal.coin) }}</div>
     </div>
   </div>
-  最新
-  <select v-model="currentCount">
-    <option :value="10">10</option>
-    <option :value="20">20</option>
-    <option :value="30">30</option>
-  </select>
-  篇文章
 
-  <select v-model="currentType">
-    <option value="view">view</option>
-    <option value="gp">gp</option>
-  </select>
+  <fieldset>
+    <legend>控制項</legend>
+    數據:
+    <select v-model="currentType">
+      <option value="view">view</option>
+      <option value="gp">gp</option>
+    </select>
+    是否排序
+    <input type="checkbox" v-model="currentIsSorted">
+  </fieldset>
 
   <div class="grid">
     <div class="col-6_sm-12">
@@ -99,44 +99,54 @@ const clickCalndar = (e) => {
               <a target="_blank" :title="article.createAt"
                 :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{ article.title }}</a>
             </div>
-            <div style="white-space: nowrap;padding-left: 10px;">{{ article.createAt }}</div>
+            <div style="white-space: nowrap;padding-left: 10px;">{{ article[currentType] }}</div>
           </li>
         </ul>
       </div>
     </div>
   </div>
 
-  <div>
+  <fieldset>
+    <legend>控制項</legend>
+    年度:
     <select v-model="heatMapYear">
       <option :value="y" v-for="y in years" :key="y">{{ y }}</option>
     </select>
+    數據:
     <select v-model="heatMapType">
       <option value="view">view</option>
       <option value="gp">gp</option>
     </select>
-    <HeatMap :dataset="heatMapArticles" :time="heatMapYear" :dataType="heatMapType" :clickEvent="clickCalndar"></HeatMap>
-    <ul>
-      <li v-for="article in articlesGroupByTime[heatMapCurrentDate]" :key="article.id">
-        <a
-        :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`"
-        class="card"
-        target="_blank"
-        :key="article.id"
-      >
-        <h4>{{ article.title }}</h4>
-        <p>{{ article.createAt }}</p>
-        <div style="display: flex">
-          <img :src="article.image" alt="" style="max-width: 100px" />
-          <ul>
-            <li>view：{{ article.stats.view }}</li>
-            <li>gp：{{ article.stats.gp }}</li>
-            <li>coin：{{ article.stats.coin }}</li>
-          </ul>
-        </div>
-    
-        <!-- <pre>{{ res }}</pre> -->
-      </a>
-      </li>
-    </ul>
+  </fieldset>
+  <div class="grid">
+    <div class="col-7_lg-12">
+      <HeatMap
+        :dataset="heatMapArticles"
+        :time="heatMapYear"
+        :dataType="heatMapType"
+        :clickEvent="clickCalndar">
+      </HeatMap>
+    </div>
+    <div class="col-5_lg-12">
+      <ul>
+        <li v-for="article in articlesGroupByTime[heatMapCurrentDate]" :key="article.id">
+          <a :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`" class="card" target="_blank" :key="article.id">
+            <h4>{{ article.title }}</h4>
+            <p>{{ article.createAt }}</p>
+            <div style="display: flex">
+              <img :src="article.image" alt="" style="max-width: 100px" />
+              <ul>
+                <li>view：{{ article.stats.view }}</li>
+                <li>gp：{{ article.stats.gp }}</li>
+                <li>coin：{{ article.stats.coin }}</li>
+              </ul>
+            </div>
+
+            <!-- <pre>{{ res }}</pre> -->
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
+
 </template>

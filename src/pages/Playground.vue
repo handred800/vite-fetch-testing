@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import _ from "lodash";
-import { thousandFormat, filterWith, orderWith } from "../helper/utils";
+import { thousandFormat, filterWith } from "../helper/utils";
 import { useArticlesStore } from "../store";
 import LineChart from "../components/LineChart.vue";
 
@@ -12,19 +12,19 @@ const { articles } = storeToRefs(articleStore);
 // 年度 select
 const filterYear = ref('');
 const yearOptions = computed(() => {
-  const options = _.map(articles.value, ({ createAt }) => Number(createAt.slice(0, 4)));
-  const orderDesc = (list) => _.orderBy(list, [], ['desc'])
-  const pipe = _.flow([_.uniq, orderDesc])
-  return pipe(options)
+  return _.chain(articles.value)
+  .map(({ createAt }) => Number(createAt.slice(0, 4)))
+  .sortedUniq()
+  .value();
 })
 
-const sortingWith = ref('createAt');
+const isSorted = ref(false);
 // 數據type select
 const filterStats = ref('stats.view');
 
 const filtedArticles = computed(() => {
-  const filterPipe = _.flow([filterWith(filterYear.value), orderWith(sortingWith.value)]);
-  return filterPipe(articles.value);
+  const filtedData = filterWith(filterYear.value)(articles.value);
+  return isSorted.value ? filtedData.sort((a, b) => (_.get(b, filterStats.value) - _.get(a, filterStats.value))) : filtedData;
 });
 
 // line chart
@@ -72,11 +72,8 @@ const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) 
       <line-chart :dataset="dataset" @click-data="setYear"></line-chart>
     </div>
     <div class="col-6">
-      排序：
-      <select v-model="sortingWith">
-        <option value="createAt">時間</option>
-        <option :value="filterStats">數據</option>
-      </select>
+      是否排序
+      <input type="checkbox" v-model="isSorted">
       <div class="template">
         <ul>
           <li v-for="article in filtedArticles" :key="article.id">
