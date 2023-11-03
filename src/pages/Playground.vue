@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import _ from "lodash";
-import { thousandFormat, filterWith } from "../helper/utils";
+import { thousandFormat, filterWithCurry } from "../helper/utils";
 import { useArticlesStore } from "../store";
 import LineChart from "../components/LineChart.vue";
 
@@ -23,7 +23,7 @@ const isSorted = ref(false);
 const filterStats = ref('stats.view');
 
 const filtedArticles = computed(() => {
-  const filtedData = filterWith(filterYear.value)(articles.value);
+  const filtedData = filterWithCurry(filterYear.value)(articles.value);
   return isSorted.value ? filtedData.sort((a, b) => (_.get(b, filterStats.value) - _.get(a, filterStats.value))) : filtedData;
 });
 

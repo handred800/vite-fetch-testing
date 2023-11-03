@@ -69,9 +69,16 @@ export const useBar = ($el, bindDataset, range) => {
       {
         type: "bar",
         color: '#117e96',
+        selectedMode: 'single',
         label: {
           position: 'right',
           show: false
+        },
+        select: {
+          itemStyle: {
+            color: '#F44336',
+            borderColor: '#F44336',
+          }
         },
         encode: {
           x: 0, // X axis.
@@ -195,11 +202,10 @@ export const useCalendarMap = ($el, bindDataset, range, time) => {
   const chart = echarts.init(unref($el));
   const option = {
     visualMap: {
-      // show: false,
+      show: false,
       type: 'piecewise',
       orient: 'horizontal',
       left: 'center',
-      // top: 65,
       inRange: {
         color: ["#65B581", "#FFCE34", "#F44336"],
       },
@@ -208,12 +214,14 @@ export const useCalendarMap = ($el, bindDataset, range, time) => {
       formatter: (res) => {
         const { data, marker } = res;
         return `<b>${data[0]}</b><br>
-                ${marker}${thousandFormat(data[1])}
-                `
+                ${marker}${thousandFormat(data[1])}`
       },
     },
     calendar: {
+      left: 30,
+      right: 20,
       cellSize: ['auto', 20],
+      yearLabel: { show: false }
     },
     series: [
       {

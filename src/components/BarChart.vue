@@ -3,6 +3,7 @@ import _ from "lodash";
 import { ref, computed, onMounted } from "vue";
 import { useBar } from "../composable/useChart";
 
+const emit = defineEmits(['chartClick']);
 
 const props = defineProps({
   dataset: {
@@ -31,7 +32,10 @@ onMounted(() => {
   window.addEventListener("resize", () => {
     resize();
   });
-  chart.on('click', (e) => {console.log(e);})
+  chart.on('click', (e) => {
+    if (e.componentType !== 'series') return; 
+    emit('chartClick', e.data);
+  })
 });
 </script>
 <template>

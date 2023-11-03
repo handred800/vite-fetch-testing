@@ -3,9 +3,10 @@ import _ from 'lodash';
 import { storeToRefs } from 'pinia';
 import { ref, computed } from 'vue';
 import { useArticlesStore } from '../store';
-import { thousandFormat } from "../helper/utils";
+import { sortBySize, sortByCurry, thousandFormat } from "../helper/utils";
 import BarChart from '../components/BarChart.vue';
 import HeatMap from '../components/HeatMap.vue';
+import ArticleCard from '../components/ArticleCard.vue';
 
 const articleStore = useArticlesStore();
 const { articles, years, articlesGroupByTime } = storeToRefs(articleStore);
@@ -22,7 +23,7 @@ const statsTotal = computed(() => {
   return { count: articles.value.length, ...total };
 })
 
-const articleFormatterFactory = (statName) => {
+const articleFormatterCurry = (statName) => {
   return (article) => {
     return {
       title: article.title,
@@ -33,16 +34,42 @@ const articleFormatterFactory = (statName) => {
   }
 }
 
-// 2.最近 n 篇文章數據
+// 2.文章數據
 const currentType = ref('view');
 const currentIsSorted = ref(false);
-const currentArticles = computed(() => {
-  const formattedArticles = articles.value.map(articleFormatterFactory(currentType.value));
-  return currentIsSorted.value ? formattedArticles.sort((a, b) => (b[currentType.value] - a[currentType.value])) : formattedArticles;
+const selectedId = ref('');
+const orderFunc = computed(() => sortByCurry([currentType.value]));
+
+// 處理過的文章數據
+const formattedArticles = computed(() => {
+  const formattedResult = articles.value.map(articleFormatterCurry(currentType.value));
+  return currentIsSorted.value ? orderFunc.value(formattedResult) : formattedResult;
 })
 
+// 選取的文章數據
+const selectArticle = computed(() => {
+  return articles.value.find((article) => article.id === selectedId.value);
+})
+// 去除重複值+排序的 currentType 陣列 (用於計算百分位)
+const sortedValues = computed(() => {
+  return sortBySize(formattedArticles.value.map((article) => article[currentType.value]));
+})
+
+const selectArticlePercentage = computed(() => {
+  if (selectedId.value === '') return;
+  const index = _.findLastIndex(sortedValues.value, (val) => val === selectArticle.value.stats[currentType.value]);
+  console.log(index);
+  return ((index / sortedValues.value.length) * 100).toFixed(1);
+}) 
+
+
+// 選取事件
+const clickBarchart = (data) => {
+  selectedId.value = data[3] === selectedId.value ? '' : data[3];
+} 
+ 
 // 3.月曆圖
-const heatMapCurrentDate = ref(null);
+const heatMapSelectDate = ref(null);
 const heatMapYear = ref(years.value[0]);
 const heatMapType = ref('view');
 const heatMapArticles = computed(() => {
@@ -55,7 +82,7 @@ const heatMapArticles = computed(() => {
 })
 
 const clickCalndar = (e) => {
-  heatMapCurrentDate.value = e.data[0];
+  heatMapSelectDate.value = e.data[0];
 }
 
 </script>
@@ -89,20 +116,25 @@ const clickCalndar = (e) => {
 
   <div class="grid">
     <div class="col-6_sm-12">
-      <bar-chart :dataset="currentArticles" :data-type="currentType"></bar-chart>
+      <bar-chart :dataset="formattedArticles" :data-type="currentType" @chart-click="clickBarchart"></bar-chart>
     </div>
     <div class="col-6_sm-12">
-      <div class="template">
-        <ul>
-          <li v-for="article in currentArticles" :key="article.id">
-            <div>
-              <a target="_blank" :title="article.createAt"
-                :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{ article.title }}</a>
-            </div>
-            <div style="white-space: nowrap;padding-left: 10px;">{{ article[currentType] }}</div>
-          </li>
-        </ul>
-      </div>
+      <article-card :article="selectArticle" v-if="selectedId !== ''"></article-card>
+      <div v-if="selectedId !== ''">{{ currentType }} 約高於 {{ selectArticlePercentage }} % 的文章</div>
+      <details>
+        <summary>數據</summary>
+        <div class="template">
+          <ul>
+            <li v-for="article in formattedArticles" :key="article.id">
+              <div>
+                <a target="_blank" :title="article.createAt"
+                  :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{ article.title }}</a>
+              </div>
+              <div style="white-space: nowrap;padding-left: 10px;">{{ article[currentType] }}</div>
+            </li>
+          </ul>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -128,8 +160,9 @@ const clickCalndar = (e) => {
       </HeatMap>
     </div>
     <div class="col-5_lg-12">
+      <h3>{{ heatMapSelectDate }}</h3>
       <ul>
-        <li v-for="article in articlesGroupByTime[heatMapCurrentDate]" :key="article.id">
+        <li v-for="article in articlesGroupByTime[heatMapSelectDate]" :key="article.id">
           <a :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`" class="card" target="_blank" :key="article.id">
             <h4>{{ article.title }}</h4>
             <p>{{ article.createAt }}</p>
