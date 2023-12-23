@@ -144,13 +144,6 @@ export const useLine = ($el, bindDataset) => {
         return `<b>${data[0].value[0]}:</b> ${thousandFormat(data[0].value[1])}`
       },
     },
-    dataZoom: [
-      { type: "inside", xAxisIndex: 0 },
-      {
-        type: "slider",
-        xAxisIndex: 0,
-      },
-    ],
     // toolbox: {
     //   show: true,
     //   feature: {

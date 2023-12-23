@@ -26,7 +26,10 @@ export const useArticlesStore = defineStore("articles", {
     years() {
       return _.chain(this.articles).map(({ createAt }) => createAt.slice(0, 4)).uniq().value();
     },
-    articlesGroupByTime() {
+    articlesGroupByYear() {
+      return _.groupBy(this.articles, (article) => article.createAt.slice(0, 4));
+    },
+    articlesGroupByDate() {
       return _.groupBy(this.articles, 'createAt');
     },
   },

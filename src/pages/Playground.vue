@@ -7,17 +7,10 @@ import { useArticlesStore } from "../store";
 import LineChart from "../components/LineChart.vue";
 
 const articleStore = useArticlesStore();
-const { articles } = storeToRefs(articleStore);
+const { articles, years, articlesGroupByYear } = storeToRefs(articleStore);
 
 // 年度 select
 const filterYear = ref('');
-const yearOptions = computed(() => {
-  return _.chain(articles.value)
-  .map(({ createAt }) => Number(createAt.slice(0, 4)))
-  .sortedUniq()
-  .value();
-})
-
 const isSorted = ref(false);
 // 數據type select
 const filterStats = ref('stats.view');
@@ -28,13 +21,13 @@ const filtedArticles = computed(() => {
 });
 
 // line chart
-const dataset = computed(() => {
-
-  const yearFilter = (list) => _.groupBy(list, (article) => (article.createAt.slice(0, 4)))
-  const sumFunc = (list) => _.mapValues(list, (articlesByYear) => _.sumBy(articlesByYear, filterStats.value));
-  const pipe = _.flow([yearFilter, sumFunc, _.toPairs])
-
-  return pipe(articles.value);
+const lineChartArticles = computed(() => {
+  return _.chain(articlesGroupByYear.value)
+    .mapValues((list) => {
+      return _.sumBy(list, filterStats.value);
+    })
+    .toPairs()
+    .value();
 })
 // line chart 互動
 function setYear(year) {
@@ -53,7 +46,7 @@ const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) 
     年度:
     <select v-model="filterYear">
       <option value="">全部</option>
-      <option :value="option" v-for="option in yearOptions">{{ option }}</option>
+      <option :value="y" v-for="y in years">{{ y }}</option>
     </select>
     數據:
     <select v-model="filterStats">
@@ -69,7 +62,7 @@ const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) 
   </p>
   <div class="grid">
     <div class="col-6">
-      <line-chart :dataset="dataset" @click-data="setYear"></line-chart>
+      <line-chart :dataset="lineChartArticles" @click-data="setYear"></line-chart>
     </div>
     <div class="col-6">
       是否排序

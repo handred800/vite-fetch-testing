@@ -67,9 +67,13 @@ textarea {
   margin-bottom: 15px;
   background: #fff;
   color: #000;
+  border-radius: 10px;
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
   transition: 0.15s;
+}
+.card.is-active {
+  outline: 3px solid var(--primary);
 }
 .card[href]:hover {
   box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);

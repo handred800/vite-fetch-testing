@@ -1,15 +1,16 @@
 <script setup>
 import _ from 'lodash';
 import { storeToRefs } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useArticlesStore } from '../store';
 import { sortBySize, sortByCurry, thousandFormat } from "../helper/utils";
 import BarChart from '../components/BarChart.vue';
+import LineChart from "../components/LineChart.vue";
 import HeatMap from '../components/HeatMap.vue';
 import ArticleCard from '../components/ArticleCard.vue';
 
 const articleStore = useArticlesStore();
-const { articles, years, articlesGroupByTime } = storeToRefs(articleStore);
+const { articles, years, articlesGroupByYear, articlesGroupByDate } = storeToRefs(articleStore);
 
 // 1.總和數據
 const statsTotal = computed(() => {
@@ -58,7 +59,6 @@ const sortedValues = computed(() => {
 const selectArticlePercentage = computed(() => {
   if (selectedId.value === '') return;
   const index = _.findLastIndex(sortedValues.value, (val) => val === selectArticle.value.stats[currentType.value]);
-  console.log(index);
   return ((index / sortedValues.value.length) * 100).toFixed(1);
 }) 
 
@@ -68,18 +68,43 @@ const clickBarchart = (data) => {
   selectedId.value = data[3] === selectedId.value ? '' : data[3];
 } 
  
-// 3.月曆圖
+// 3.年度線圖 & 月曆圖
+const heatMapYear = ref(null);
+const heatMapType = ref('stats.view');
 const heatMapSelectDate = ref(null);
-const heatMapYear = ref(years.value[0]);
-const heatMapType = ref('view');
+
+watch([heatMapType, heatMapYear], () => {
+  heatMapSelectDate.value = null;
+})
+
+const lineChartArticles = computed(() => {
+  return _.chain(articlesGroupByYear.value)
+    .mapValues((list) => {
+      return _.sumBy(list, heatMapType.value);
+    })
+    .toPairs()
+    .value();
+})
+
 const heatMapArticles = computed(() => {
-  return _.chain(articlesGroupByTime.value)
-    .mapValues((items) => {
-      return _.sumBy(items, (item) => item.stats[heatMapType.value]);
+  return _.chain(articlesGroupByDate.value)
+    .mapValues((list) => {
+      return _.sumBy(list, heatMapType.value);
     })
     .toPairs()
     .value()
 })
+
+// 加總數據
+const totalStats = computed(() => {
+  let articlesStats = (heatMapYear.value ? articlesGroupByYear.value[heatMapYear.value] : articles.value).map((data) => data.stats);
+  return _.mergeWith({}, ...articlesStats, (currentVal, sourceVal) => (currentVal || 0) + sourceVal)
+});
+
+// line chart 互動
+const setYear = (year) => {
+  heatMapYear.value = year || null;
+}
 
 const clickCalndar = (e) => {
   heatMapSelectDate.value = e.data[0];
@@ -103,6 +128,7 @@ const clickCalndar = (e) => {
     </div>
   </div>
 
+  <h2>排行榜</h2>
   <fieldset>
     <legend>控制項</legend>
     數據:
@@ -138,45 +164,43 @@ const clickCalndar = (e) => {
     </div>
   </div>
 
+  <h2>年度線圖</h2>
+  <line-chart :dataset="lineChartArticles" @click-data="setYear"></line-chart>
   <fieldset>
     <legend>控制項</legend>
     年度:
     <select v-model="heatMapYear">
+      <option :value="null">全部</option>
       <option :value="y" v-for="y in years" :key="y">{{ y }}</option>
     </select>
     數據:
     <select v-model="heatMapType">
-      <option value="view">view</option>
-      <option value="gp">gp</option>
+      <option value="stats.view">view</option>
+      <option value="stats.gp">gp</option>
     </select>
   </fieldset>
+  <p>共 {{ heatMapYear ? articlesGroupByYear[heatMapYear].length : articles.length }} 篇文章
+    、{{ thousandFormat(totalStats['view']) }} 觀看數
+    、{{ thousandFormat(totalStats['gp']) }} GP
+    、{{ thousandFormat(totalStats['coin']) }} 巴幣
+  </p>
   <div class="grid">
-    <div class="col-7_lg-12">
-      <HeatMap
-        :dataset="heatMapArticles"
-        :time="heatMapYear"
-        :dataType="heatMapType"
-        :clickEvent="clickCalndar">
-      </HeatMap>
+    <div class="col-7_lg-12" style="position: relative;">
+      <div style="position: sticky; top: 0;">
+        <heat-map
+          v-if="heatMapYear"
+          :dataset="heatMapArticles"
+          :time="heatMapYear"
+          :dataType="heatMapType"
+          :clickEvent="clickCalndar">
+        </heat-map>
+      </div>
     </div>
     <div class="col-5_lg-12">
       <h3>{{ heatMapSelectDate }}</h3>
       <ul>
-        <li v-for="article in articlesGroupByTime[heatMapSelectDate]" :key="article.id">
-          <a :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`" class="card" target="_blank" :key="article.id">
-            <h4>{{ article.title }}</h4>
-            <p>{{ article.createAt }}</p>
-            <div style="display: flex">
-              <img :src="article.image" alt="" style="max-width: 100px" />
-              <ul>
-                <li>view：{{ article.stats.view }}</li>
-                <li>gp：{{ article.stats.gp }}</li>
-                <li>coin：{{ article.stats.coin }}</li>
-              </ul>
-            </div>
-
-            <!-- <pre>{{ res }}</pre> -->
-          </a>
+        <li v-for="article in articlesGroupByYear[heatMapYear]" :key="article.id">
+          <article-card :article="article" :class="{'is-active': article.createAt === heatMapSelectDate}"></article-card>
         </li>
       </ul>
     </div>
