@@ -1,102 +1,81 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, reactive, computed } from "vue";
 import { storeToRefs } from "pinia";
 import _ from "lodash";
-import { thousandFormat, filterWithCurry } from "../helper/utils";
+import { thousandFormat } from "../helper/utils";
 import { useArticlesStore } from "../store";
-import LineChart from "../components/LineChart.vue";
 
 const articleStore = useArticlesStore();
-const { articles, years, articlesGroupByYear } = storeToRefs(articleStore);
+const { articles } = storeToRefs(articleStore);
 
-// 年度 select
-const filterYear = ref('');
-const isSorted = ref(false);
-// 數據type select
-const filterStats = ref('stats.view');
-
+// 條件過濾
+const filter = ref('');
 const filtedArticles = computed(() => {
-  const filtedData = filterWithCurry(filterYear.value)(articles.value);
-  return isSorted.value ? filtedData.sort((a, b) => (_.get(b, filterStats.value) - _.get(a, filterStats.value))) : filtedData;
+    return filter.value === ''
+        ? articles.value
+        : articles.value.filter((article) => article.title.includes(filter.value));
 });
 
-// line chart
-const lineChartArticles = computed(() => {
-  return _.chain(articlesGroupByYear.value)
-    .mapValues((list) => {
-      return _.sumBy(list, filterStats.value);
-    })
-    .toPairs()
-    .value();
-})
-// line chart 互動
-function setYear(year) {
-  filterYear.value = year;
+const bucketGroup = reactive({});
+
+const bucketName = ref('');
+const bucket = ref([]);
+
+function createGroup() {
+    if (bucketName.value === '' || bucket.value.length === 0) return;
+    bucketGroup[bucketName.value] = bucket.value;
+    bucketName.value = '';
+    bucket.value = [];
 }
 
-// 加總數據
-const totalStats = (statsName) => _.reduce(filtedArticles.value, (sum, current) => sum + current.stats[statsName], 0);
+function deleteGroup(name) {
+    delete bucketGroup[name];
+}
 
+// 只存取 ID
+function idsToArticles(ids) {
+    return ids.map((id) => articles.value.find((article) => article.id === id));
+}
+const articleIds = computed(() => {
+    return filtedArticles.value.map((article) => article.id);
+})
+const remainingArticles = computed(() => {
+    const ids = _.pullAll(articleIds.value, Object.values(bucketGroup).flat());
+    return idsToArticles(ids);
+});
 
 </script>
 
 <template>
-  <fieldset>
-    <legend>控制項</legend>
-    年度:
-    <select v-model="filterYear">
-      <option value="">全部</option>
-      <option :value="y" v-for="y in years">{{ y }}</option>
-    </select>
-    數據:
-    <select v-model="filterStats">
-      <option value="stats.view">觀看數</option>
-      <option value="stats.gp">GP</option>
-      <option value="stats.coin">巴幣</option>
-    </select>
-  </fieldset>
-  <p>共 {{ filtedArticles.length }} 篇文章
-    、{{ thousandFormat(totalStats('view')) }} 觀看數
-    、{{ thousandFormat(totalStats('gp')) }} GP
-    、{{ thousandFormat(totalStats('coin')) }} 巴幣
-  </p>
-  <div class="grid">
-    <div class="col-6">
-      <line-chart :dataset="lineChartArticles" @click-data="setYear"></line-chart>
-    </div>
-    <div class="col-6">
-      是否排序
-      <input type="checkbox" v-model="isSorted">
-      <div class="template">
-        <ul>
-          <li v-for="article in filtedArticles" :key="article.id">
-            <div>
-              <a target="_blank" :title="article.createAt"
-                :href="`https://home.gamer.com.tw/artwork.php?sn=${article.id}`">{{ article.title }}</a>
+    <div class="grid">
+        <div class="col-6_sm-12">
+            <input type="text" placeholder="搜尋" v-model="filter">
+            <div class="template">
+                <ul>
+                    <li v-for="article in remainingArticles">
+                        <label :for="article.id">
+                            <input type="checkbox" :id="article.id" v-model="bucket" :value="article.id">
+                            {{ article.title }}
+                        </label>
+                    </li>
+                </ul>
             </div>
-            <div style="white-space: nowrap;padding-left: 10px;">{{ _.get(article, filterStats) }}</div>
-          </li>
-        </ul>
-      </div>
+            <input type="text" placeholder="組別名" v-model="bucketName">
+            <button @click="createGroup">建立</button>
+        </div>
+        <div class="col-6_sm-12">
+            <ul>
+                <li v-for="name in Object.keys(bucketGroup)" :id="name">
+                    <details>
+                        <summary>{{ name }} <button @click="deleteGroup(name)">X</button></summary>
+                        <div class="template">
+                            <ol>
+                                <li v-for="article in idsToArticles(bucketGroup[name])" :id="article.id">{{ article.title }}</li>
+                            </ol>
+                        </div>
+                    </details>
+                </li>
+            </ul>
+        </div>
     </div>
-  </div>
 </template>
-
-<style scoped>
-.card {
-  display: block;
-  max-width: 500px;
-  width: 100%;
-  padding: 15px 20px;
-  margin-bottom: 15px;
-  background: #fff;
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
-  box-sizing: border-box;
-  transition: 0.15s;
-}
-
-.card:hover {
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-</style>

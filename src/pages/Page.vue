@@ -11,7 +11,12 @@ function reset() {
   clearData();
   router.push('/');
 }
-
+function scrollTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
 </script>
 <template>
   <header>
@@ -27,6 +32,7 @@ function reset() {
       <component :is="Component" :key="$route.name" />
     </keep-alive>
   </router-view>
+  <button type="button" class="top-btn" @click="scrollTop">top</button>
 </template>
 <style scoped>
 header {
@@ -36,6 +42,12 @@ header {
 nav a {
   display: inline-block;
   padding: 5px 10px;
+}
+.top-btn {
+  display: block;
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
 }
 
 .router-link-active {
