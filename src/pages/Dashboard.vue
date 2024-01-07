@@ -106,8 +106,8 @@ const setYear = (year) => {
   heatMapYear.value = year || null;
 }
 
-const clickCalndar = (e) => {
-  heatMapSelectDate.value = e.data[0];
+const clickCalndar = (data) => {
+  heatMapSelectDate.value = data[0];
 }
 
 </script>
@@ -192,7 +192,7 @@ const clickCalndar = (e) => {
           :dataset="heatMapArticles"
           :time="heatMapYear"
           :dataType="heatMapType"
-          :clickEvent="clickCalndar">
+          @chartClick="clickCalndar">
         </heat-map>
       </div>
     </div>

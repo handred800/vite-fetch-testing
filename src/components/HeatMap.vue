@@ -16,10 +16,9 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  clickEvent: {
-    type: Function,
-  }
 });
+
+const emit = defineEmits(['chartClick']);
 
 const dataRange = computed(() => {
   const values = _.map(props.dataset, (item) => item[1]);
@@ -34,7 +33,11 @@ onMounted(() => {
   window.addEventListener("resize", () => {
     resize();
   });
-  if(props.clickEvent) chart.on('click', props.clickEvent);
+  
+  chart.on('click', (e) => {
+    if (e.componentType !== 'series') return; 
+    emit('chartClick', e.data);
+  })
 })
 
 </script>
@@ -45,11 +48,5 @@ onMounted(() => {
 .container {
   width: 100%;
   height: 250px;
-}
-
-pre {
-  white-space: pre-wrap;
-  max-height: 300px;
-  overflow-y: auto;
 }
 </style>

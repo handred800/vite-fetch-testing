@@ -9,7 +9,7 @@
 }
 :root {
   --primary: #117e96; 
-  --secondary: #b6fcf4;
+  --secondary: #b3f7ef;
 }
 
 html,

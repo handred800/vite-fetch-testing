@@ -11,7 +11,7 @@ import {
   CalendarComponent,
   MarkLineComponent,
 } from "echarts/components";
-import { BarChart, LineChart, HeatmapChart, ScatterChart } from "echarts/charts";
+import { BarChart, LineChart, PieChart, HeatmapChart, ScatterChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 import { unref, watchEffect } from "vue";
 import { thousandFormat } from "../helper/utils";
@@ -29,10 +29,13 @@ echarts.use([
   MarkLineComponent,
   BarChart,
   LineChart,
+  PieChart,
   HeatmapChart,
   ScatterChart,
   CanvasRenderer,
 ]);
+
+const colorPalette = ['#117e96', '#06d6a0', '#99d98c', '#ef476f', '#ffd166', '#0079FF'];
 
 export const useBar = ($el, bindDataset, range) => {
   const chart = echarts.init(unref($el));
@@ -190,6 +193,55 @@ export const useLine = ($el, bindDataset) => {
   watchEffect(setDataset);
   return { chart, resize };
 };
+
+export const usePie = ($el, bindDataset) => {
+  const chart = echarts.init(unref($el));
+
+  const option = {
+    tooltip: {
+      formatter: (data) => {
+        console.log(data);
+        return `<b>${data.value[0]}:</b> ${thousandFormat(data.value[1])}`
+      },
+    },
+    legend: {
+      orient: 'vertical',
+      bottom: 'bottom'
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: '65%',
+        color: colorPalette,
+        itemStyle: {
+          borderColor: '#fff',
+          borderWidth: 1
+        },
+        label: {
+          lineHeight: 20,
+          fontSize: 16,
+          alignTo: 'labelLine',
+          formatter: ({ value, percent }) => {
+            return `【${value[0]}】\n${percent}%`
+          }
+        }
+      }
+    ]
+  }
+
+  // 刷新 function
+  function setDataset() {
+    option.dataset = { source: unref(bindDataset) };
+    chart.setOption(option);
+  }
+
+  // 封裝resize
+  const resize = () => chart.resize();
+
+  //監聽資料 刷新圖表
+  watchEffect(setDataset);
+  return { chart, resize };
+}
 
 export const useCalendarMap = ($el, bindDataset, range, time) => {
   const chart = echarts.init(unref($el));

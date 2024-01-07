@@ -43,20 +43,10 @@ onMounted(() => {
 </script>
 <template>
   <div ref="$container" class="container"></div>
-  <!-- <details>
-    <summary>dataset</summary>
-    <pre>{{ props.dataset }}</pre>
-  </details> -->
 </template>
 <style scoped>
 .container {
   width: 100%;
   height: 350px;
-}
-
-pre {
-  white-space: pre-wrap;
-  max-height: 300px;
-  overflow-y: auto;
 }
 </style>
